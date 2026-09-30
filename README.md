@@ -74,6 +74,25 @@ Existing rows are never changed.
 - **Damaged or unreadable file.** The app says so and waits for Enter as above. The
   damaged file is never overwritten: repair it, or rename it to start a new journal.
 
+## Web version (React frontend + API)
+
+`server.py` is a small JSON API (standard library only) that draws a ticket, writes it
+to `journal.xlsx` and returns the generated ticket text (`tickets.ticket_text`).
+
+```bash
+python server.py            # API on http://127.0.0.1:8000
+cd frontend
+npm install
+npm run dev                 # UI on http://localhost:5173, /api is proxied to the backend
+```
+
+- `POST /api/tickets` with `{"last_name": "...", "first_name": "..."}` returns
+  `{ticket, questions, text}`.
+- `GET /api/tickets/N` returns the text of ticket N without registering anyone.
+
+The UI is a light minimalist design with one accent colour, a responsive layout and a
+3D flipping ticket card; it uses only React and Vite.
+
 ## Tests
 
 ```bash
