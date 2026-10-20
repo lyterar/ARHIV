@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+pytest-cache-files-*/
+app.log*
+results.xlsx
+.results.xlsx.lock
+.*.tmp
+~$*
+.qa/
+node_modules/

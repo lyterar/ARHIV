@@ -1,0 +1,9 @@
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.txt text eol=lf
+*.ini text eol=lf
+*.cmd text eol=crlf
+*.docx binary
+*.xlsx binary
