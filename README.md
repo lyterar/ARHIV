@@ -1,116 +1,162 @@
-# Exam ticket registration
+# Лабораторная работа 2 — Генератор экзаменационных билетов
 
-A console app that registers students for exam tickets. For each student it asks for
-the last and first name, gives out a random ticket number from 1 to 20 and adds a row
-to `journal.xlsx` in the current working directory.
+Десктопное приложение на **Python + Tkinter/ttk**. Выберите группу и студента:
+программа выдаст билет с тремя вопросами и сразу запишет результат в Excel.
+При повторном выборе студент получит свой первый билет, а в истории появится
+ещё одна строка с отметкой «да».
 
-## Requirements
+Разработка выполнена с Codex вместо Copilot. Английское техническое задание
+находится в [PROMPT.md](PROMPT.md), результаты проверки — в [REPORT.md](REPORT.md).
 
-- Python 3.10 or newer
-- `openpyxl`, `readchar` (and `pytest` for the tests), listed in `requirements.txt`
+## Быстрый запуск
 
-## Installation
+Нужен Python 3.10 или новее с Tkinter. В стандартной установке Python для Windows
+Tkinter уже включён. В терминале, открытом в этой папке:
 
-```bash
-python -m venv .venv
-# Windows (cmd / PowerShell):
-.venv\Scripts\activate
-# Linux / macOS:
-source .venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-## Running
-
-Run the app from the folder where the journal should be kept:
-
-```bash
+```powershell
+python -m pip install -r requirements.txt
 python main.py
 ```
 
-```
-Для выхода нажмите ESC.
-Last name: Иванов
-First name: Иван
-Билет № 7
-Last name:
-```
+В Windows можно запустить **`run.cmd` двойным щелчком**. Если в папке есть `.venv`,
+запускатель использует её Python. В текущем окружении зависимости уже установлены.
+Node.js, браузер и веб-сервер не нужны.
 
-- **ESC** pressed at the start of a prompt (before typing anything) exits the app.
-  On Linux/macOS, readchar waits for one more key after ESC, so press ESC twice.
-- **Enter** on an empty line, or a line of spaces only, shows a message and repeats
-  the same prompt. Leading and trailing spaces are removed before saving.
-- **Backspace** works as usual, including on the first character you typed.
-- **Ctrl+C** also exits cleanly.
+По умолчанию программа ищет файлы рядом с `main.py`, независимо от рабочей папки
+терминала. Другую папку можно выбрать в интерфейсе или при запуске:
 
-Use a real terminal: Windows Terminal, cmd, PowerShell, the VS Code terminal or any
-Linux/macOS terminal. If standard input is not a terminal (piped input, some IDE output
-panes, Git Bash's mintty without `winpty`), the app falls back to plain line input.
-ESC is not available there; end the input with Ctrl+Z, Enter (Windows) or Ctrl+D.
-
-## The journal file
-
-`journal.xlsx` is created on the first record, with this header row:
-
-| A         | B          | C            | D            |
-|-----------|------------|--------------|--------------|
-| Last name | First name | Номер билета | Дата и время |
-
-Column D holds a real Excel date/time shown as `YYYY-MM-DD HH:MM:SS`, so it can be
-sorted and filtered. If the file already exists, new rows go after the last filled row.
-Existing rows are never changed.
-
-### Reliability
-
-- **Saved after every student.** For each record the app opens the file, adds the
-  row, saves and closes it. The new version is written to a temporary file first and
-  then swapped in, so killing the app or losing power mid-save cannot damage records
-  that were already saved.
-- **File open in Excel.** The app prints
-  `Файл journal.xlsx открыт в другой программе. Закройте его и нажмите Enter для повторной попытки.`
-  and waits. After Enter it tries to save the same record again, so nothing typed is
-  lost. ESC at this point exits and prints the record that was not saved.
-- **Damaged or unreadable file.** The app says so and waits for Enter as above. The
-  damaged file is never overwritten: repair it, or rename it to start a new journal.
-
-## Web version (React frontend + API)
-
-`server.py` is a small JSON API (standard library only) that draws a ticket, writes it
-to `journal.xlsx` and returns the generated ticket text (`tickets.ticket_text`).
-
-```bash
-python server.py            # API on http://127.0.0.1:8000
-cd frontend
-npm install
-npm run dev                 # UI on http://localhost:5173, /api is proxied to the backend
+```powershell
+python main.py --data-dir "C:\ExamData"
 ```
 
-- `POST /api/tickets` with `{"last_name": "...", "first_name": "..."}` returns
-  `{ticket, questions, text}`.
-- `GET /api/tickets/N` returns the text of ticket N without registering anyone.
+## Входные файлы
 
-The UI is a light minimalist design with one accent colour, a responsive layout and a
-3D flipping ticket card; it uses only React and Vite.
+В комплекте уже есть демонстрационные `students.xlsx` и `tickets.docx`.
+**Все студенты вымышлены.** В Excel две заполненные группы, семь записей и одна
+пустая группа. Одинаковое имя в разных группах позволяет проверить независимость
+назначений. В Word 20 учебных билетов по Python: темы из первой лабораторной
+дополнены третьим вопросом. Замените эти файлы своими перед настоящим экзаменом.
 
-## Tests
+### students.xlsx
 
-```bash
-python -m pytest
+Каждый лист — отдельная группа. Имя листа отображается в первом списке.
+
+| Строка | A | B |
+|---|---|---|
+| 1 | Фамилия | Имя |
+| 2 | Иванов | Иван |
+| 3 | Петрова | Анна |
+
+Пустые строки пропускаются. Пробелы по краям имён удаляются. Строки с пропущенным
+именем, формулой вместо имени или повтором того же студента пропускаются с записью
+в лог. Пустая группа должна содержать заголовки A1 и B1, но не содержать студентов.
+
+### tickets.docx
+
+Заголовок и каждый вопрос размещаются в отдельных абзацах:
+
+```text
+Билет 1
+1. Что такое переменная?
+2. Как работает условный оператор?
+3. Приведите пример преобразования типов.
+
+Билет 2
+1. Как форматировать строку?
+2. Как работает цикл for?
+3. Выведите чётные числа от 2 до 20.
 ```
 
-The tests create their Excel files in temporary directories and never touch your
-`journal.xlsx`.
+Номера `1.`, `2.`, `3.` нужно вводить текстом: автоматическая нумерация Word
+не входит в формат задания. Допускаются ручные переводы строки внутри абзаца.
+Повреждённые блоки и нераспознанные заголовки пропускаются, причины записываются
+в `app.log`. Если вопросов больше трёх, используются первые три с предупреждением.
+Если корректных билетов нет, выдача недоступна до исправления документа.
 
-## Project structure
+При номерах 1…N выбор соответствует диапазону 1…N. Если после пропуска повреждённых
+билетов остались, например, номера 1, 2 и 7, программа выбирает только из этих трёх
+номеров. Исходные номера сохраняются, чтобы история повторных выдач оставалась
+согласованной.
 
+## Работа с приложением
+
+1. Выберите группу. Список студентов заполнится данными соответствующего листа.
+2. Выберите студента. Кнопка «Сгенерировать билет» станет активной.
+3. Нажмите кнопку. После успешного сохранения откроется номер билета и три вопроса.
+4. Нажмите **ESC** или «Следующий студент». Закроется окно результата, основное
+   приложение продолжит работать. Выбор студента сбросится.
+5. Для обновления изменённых Excel/Word-файлов нажмите «Обновить данные».
+
+Каждое успешное нажатие добавляет новую строку. Повтор определяется по тройке
+«группа + фамилия + имя» и сохраняется между перезапусками программы.
+
+## Журнал results.xlsx
+
+Файл автоматически создаётся при первом запуске, до первой генерации.
+
+| A | B | C | D | E | F |
+|---|---|---|---|---|---|
+| Группа | Фамилия | Имя | Номер билета | Дата и время | Повтор (да/нет) |
+
+Дата хранится как настоящая дата Excel, формат отображения — `yyyy-mm-dd hh:mm:ss`.
+Часовой пояс соответствует локальным настройкам компьютера.
+История дописывается после последней заполненной строки. Старые значения,
+форматирование и дополнительные листы сохраняются.
+
+Если студента уже записывали, номер берётся из **первой** найденной строки.
+Более поздние строки не меняют первоначального назначения. Если этот билет
+удалён из Word или стал некорректным, программа попросит его восстановить.
+Она не заменит билет другим без предупреждения.
+
+### Ошибки и повтор сохранения
+
+- Если исходного файла нет или он повреждён, появится понятное сообщение.
+  Исправьте файл и нажмите «Обновить данные».
+- Если Excel блокирует `results.xlsx`, закройте его и нажмите «Повторить».
+  Сохраняется тот же выбранный билет. «Отмена» возвращает к выбору без записи.
+- Повреждённый журнал или файл с чужими заголовками не перезаписывается.
+  Восстановите файл из резервной копии либо выберите другую папку данных.
+- Запись идёт через временный файл и атомарную замену. До успешной записи
+  окно результата не открывается.
+- Служебный `.results.xlsx.lock` предотвращает одновременную запись двух
+  экземпляров приложения. После выхода пустой служебный файл может остаться;
+  блокировка операционной системы снимается автоматически.
+
+`results.xlsx` и логи не публикуются в Git: журнал может содержать реальные имена.
+
+## Тесты
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
 ```
-main.py               entry point, console input loop, ESC/Backspace handling
-journal.py            Excel logic: create, append, save safely, report errors
-tickets.py            ticket number generation
-tests/test_journal.py tests for the Excel journal and input validation
-tests/test_tickets.py tests for ticket generation
-tests/test_main.py    tests for the prompt loop and key handling
-requirements.txt      dependencies
-pytest.ini            pytest settings (test path, import path)
+
+Тесты используют временные папки и не меняют рабочий журнал. Проверки GUI создают
+настоящие окна Tkinter, поэтому нужен графический рабочий стол.
+Для среды без дисплея:
+
+```powershell
+python -m pytest -q -m "not gui"
 ```
+
+## Структура
+
+```text
+main.py                 запуск и журналирование ошибок
+run.cmd                 запуск в Windows
+exam_tickets/
+  models.py             студент, билет, результат и ошибки
+  sources.py            чтение students.xlsx и tickets.docx
+  storage.py            история Excel, блокировки, атомарная запись
+  service.py            первое назначение, повторы и сохранение
+  ui.py                 главное окно и окно результата
+tests/                  модульные тесты и проверки интерфейса
+students.xlsx           демонстрационные группы
+tickets.docx            20 демонстрационных билетов
+PROMPT.md               подробное ТЗ на английском
+REPORT.md               отчёт о реализации и проверке
+```
+
+Ветка лабораторной работы — `lab2-ui-tickets` в репозитории `lyterar/ARHIV`.
+Она содержит десктопную версию. React/Vite, JSON API и тесты веб-сервера удалены.
+Исходная первая лабораторная остаётся в истории Git.
